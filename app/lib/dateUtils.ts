@@ -68,7 +68,7 @@ export function seededFloat(seed: number): number {
 }
 
 export function getDayFlower(dateKey: string): number {
-  return Math.floor(seededFloat(hashStr(dateKey)) * 6);
+  return Math.floor(seededFloat(hashStr(dateKey)) * 10);
 }
 
 export function resolveType(types: TaskType[], id: string): TaskType {

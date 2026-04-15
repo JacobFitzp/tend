@@ -56,6 +56,7 @@ export default function App() {
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevAllDone = useRef(false);
   const dragId = useRef<number | null>(null);
+  const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
     try {
@@ -193,14 +194,14 @@ export default function App() {
     if (!task.done) {
       SFX.tick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 18, 1); earnXp(XP_PER_TASK);
       setFlash(f => ({ ...f, [taskId]: true })); setTimeout(() => setFlash(f => { const n = { ...f }; delete n[taskId]; return n; }), 400);
-    } else { loseXp(XP_PER_TASK); }
+    } else { SFX.untick(); loseXp(XP_PER_TASK); }
     updateTasks(ts => ts.map(tk => tk.id !== taskId ? tk : { ...tk, done: !tk.done }));
   };
 
   const toggleSub = (taskId: number, subId: number, isDone: boolean, e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
     if (!isDone) { SFX.subtick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, 0.7); earnXp(XP_PER_SUBTASK); }
-    else { loseXp(XP_PER_SUBTASK); }
+    else { SFX.untick(); loseXp(XP_PER_SUBTASK); }
     updateTasks(ts => ts.map(tk => tk.id !== taskId ? tk : { ...tk, subtasks: tk.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s) }));
   };
 
@@ -240,45 +241,55 @@ export default function App() {
       {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} workdays={workdays} onWorkdaysChange={changeWorkdays} onClose={() => setShowSettings(false)}/>}
 
       {/* Header */}
-      <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
+      <div style={{display:"flex",alignItems:"center",marginBottom:12,WebkitAppRegion:"drag"} as React.CSSProperties}>
         <div style={{fontSize:20,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.5px",flex:1}}>Tend</div>
-        <button onClick={() => setShowSettings(s => !s)} style={{background:showSettings?ab:"transparent",border:`1.5px solid ${showSettings?aborder:"var(--color-border-tertiary)"}`,borderRadius:10,padding:"5px 8px",cursor:"pointer",fontSize:18,color:showSettings?accent:"var(--color-text-tertiary)",lineHeight:1,transition:"all 0.15s"}}>⚙</button>
+        <button onClick={() => setShowSettings(s => !s)} style={{WebkitAppRegion:"no-drag",background:showSettings?ab:"transparent",border:`1.5px solid ${showSettings?aborder:"var(--color-border-tertiary)"}`,borderRadius:10,padding:"5px 8px",cursor:"pointer",fontSize:18,color:showSettings?accent:"var(--color-text-tertiary)",lineHeight:1,transition:"all 0.15s"} as React.CSSProperties}>⚙</button>
       </div>
 
-      {/* Plant + XP strip */}
-      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:12}}>
-        <div className={celebrating ? "plant-celebrate" : plantDead ? "" : "plant-idle"} style={{width:60,height:66,flexShrink:0,display:"flex",alignItems:"center",justifyContent:"center"}}>
-          <svg width="60" height="66" viewBox="0 0 100 110"><FlowerPlant index={flowerIdx} stage={plantStage} dead={plantDead}/></svg>
-        </div>
-        <div style={{flex:1,minWidth:0}}>
-          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:6}}>
-            <div style={{width:26,height:26,borderRadius:"50%",background:accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,color:"#fff",flexShrink:0}}>{level}</div>
-            <div style={{fontSize:12,fontWeight:600,color:"var(--color-text-primary)",flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{getLevelTitle(level)}</div>
-            <div style={{display:"flex",alignItems:"center",gap:3,flexShrink:0}}>
-              <span style={{fontSize:11}}>🔥</span>
-              <span style={{fontSize:12,fontWeight:700,color:"var(--color-text-primary)"}}>{streak.count}</span>
+      {/* Plant + XP ring */}
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:12,gap:5}}>
+        <div style={{position:"relative",width:130,height:130}}>
+          <svg width="130" height="130" viewBox="0 0 130 130" style={{position:"absolute",top:0,left:0}}>
+            <circle cx="65" cy="65" r="58" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="5"/>
+            <circle cx="65" cy="65" r="58" fill="none" stroke={accent} strokeWidth="5" strokeLinecap="round"
+              strokeDasharray={`${2*Math.PI*58}`}
+              strokeDashoffset={`${2*Math.PI*58*(1 - lvlPct/100)}`}
+              style={{transform:"rotate(-90deg)",transformOrigin:"65px 65px",transition:"stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1)"}}/>
+          </svg>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}>
+            <div className={celebrating ? "plant-celebrate" : plantDead ? "" : "plant-idle"} style={{width:96,height:96,display:"flex",alignItems:"center",justifyContent:"center"}}>
+              <svg width="96" height="96" viewBox="0 0 100 110"><FlowerPlant index={flowerIdx} stage={plantStage} dead={plantDead}/></svg>
             </div>
           </div>
-          <div style={{height:5,background:"rgba(0,0,0,0.07)",borderRadius:99,overflow:"hidden"}}>
-            <div className="xp-bar-fill" style={{height:"100%",width:`${lvlPct}%`,background:accent,borderRadius:99}}/>
-          </div>
-          <div style={{display:"flex",justifyContent:"space-between",marginTop:3}}>
-            <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{plantDead ? `${flowerName} wilted 🥀` : `${flowerName} · ${stageNames[plantStage]}`}</div>
-            <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{lvlXp}/{lvlNeeded} xp</div>
-          </div>
-          {combo > 1 && <div style={{marginTop:3,fontSize:10,color:accent,fontWeight:700,letterSpacing:"0.3px"}}>{combo}× combo — keep going!</div>}
+          <div style={{position:"absolute",bottom:4,right:4,width:24,height:24,borderRadius:"50%",background:accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,0.18)"}}>{level}</div>
         </div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{fontSize:12,fontWeight:600,color:"var(--color-text-primary)"}}>{getLevelTitle(level)}</div>
+          <div style={{display:"flex",alignItems:"center",gap:3}}>
+            <span style={{fontSize:11}}>🔥</span>
+            <span style={{fontSize:12,fontWeight:700,color:"var(--color-text-primary)"}}>{streak.count}</span>
+          </div>
+        </div>
+        <div style={{display:"flex",gap:10,alignItems:"center"}}>
+          <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{plantDead ? `${flowerName} wilted 🥀` : `${flowerName} · ${stageNames[plantStage]}`}</div>
+          <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{lvlXp}/{lvlNeeded} xp</div>
+        </div>
+        {combo > 1 && <div style={{fontSize:10,color:accent,fontWeight:700,letterSpacing:"0.3px"}}>{combo}× combo — keep going!</div>}
       </div>
 
       {/* Day nav */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <button onClick={() => shiftDay(-1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:18,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>‹</button>
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:17,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.2px"}}>{formatDay(currentDate, workdays)}</div>
+        <div style={{textAlign:"center",position:"relative",display:"flex",flexDirection:"column",alignItems:"center"}}>
+          <input ref={dateInputRef} type="date"
+            value={`${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,"0")}-${String(currentDate.getDate()).padStart(2,"0")}`}
+            onChange={e => { const [y,m,d] = e.target.value.split("-").map(Number); if (y && m && d) setCurrentDate(new Date(y, m-1, d)); }}
+            style={{position:"absolute",opacity:0,pointerEvents:"none",width:0,height:0}}/>
+          <button onClick={() => dateInputRef.current?.showPicker()} style={{fontSize:17,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.2px",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"var(--font-sans)"}}>{formatDay(currentDate, workdays)}</button>
           {total > 0 && <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>{done} of {total} done</div>}
-          <button onClick={toggleOOO} style={{marginTop:5,fontSize:11,padding:"2px 10px",borderRadius:99,border:`1.5px solid ${isOOO?"#F0A500":"var(--color-border-tertiary)"}`,background:isOOO?"#FFF7E0":"transparent",color:isOOO?"#B07500":"var(--color-text-tertiary)",cursor:"pointer",fontWeight:isOOO?600:400,transition:"all 0.15s"}}>
+          {(total === 0 || isOOO) && <button onClick={toggleOOO} style={{marginTop:5,fontSize:11,padding:"2px 10px",borderRadius:99,border:`1.5px solid ${isOOO?"#F0A500":"var(--color-border-tertiary)"}`,background:isOOO?"#FFF7E0":"transparent",color:isOOO?"#B07500":"var(--color-text-tertiary)",cursor:"pointer",fontWeight:isOOO?600:400,transition:"all 0.15s"}}>
             {isOOO ? "🏖 Out of office" : "Out of office"}
-          </button>
+          </button>}
         </div>
         <button onClick={() => shiftDay(1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:18,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>›</button>
       </div>
@@ -350,7 +361,7 @@ export default function App() {
       </div>
 
       {/* Add task — sticky footer */}
-      <div style={{position:"sticky",bottom:0,background:"var(--background)",paddingTop:8,paddingBottom:16,marginTop:8,borderTop:"1.5px solid var(--color-border-tertiary)"}}>
+      <div style={{position:"sticky",bottom:0,background:"var(--background)",paddingTop:8,paddingBottom:16,marginTop:8,borderTop:"1.5px solid var(--color-border-tertiary)",...(isOOO && {display:"none"})}}>
         <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
           <div style={{flex:1,display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",overflow:"visible",transition:"border-color 0.15s",position:"relative"}}>
             <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center"}}>

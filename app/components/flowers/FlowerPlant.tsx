@@ -5,10 +5,14 @@ import { Lavender } from './Lavender';
 import { Tulip } from './Tulip';
 import { CherryBlossom } from './CherryBlossom';
 import { Daisy } from './Daisy';
+import { Poppy } from './Poppy';
+import { Iris } from './Iris';
+import { Orchid } from './Orchid';
+import { Cactus } from './Cactus';
 import type { FlowerProps } from './shared';
 
-const FLOWER_COMPONENTS = [Rose, Sunflower, Lavender, Tulip, CherryBlossom, Daisy];
-export const FLOWER_NAMES = ["Rose","Sunflower","Lavender","Tulip","Cherry Blossom","Daisy"];
+const FLOWER_COMPONENTS = [Rose, Sunflower, Lavender, Tulip, CherryBlossom, Daisy, Poppy, Iris, Orchid, Cactus];
+export const FLOWER_NAMES = ["Rose","Sunflower","Lavender","Tulip","Cherry Blossom","Daisy","Poppy","Iris","Orchid","Cactus"];
 
 interface FlowerPlantProps extends FlowerProps { index: number; }
 export function FlowerPlant({ index, stage, dead }: FlowerPlantProps) {
