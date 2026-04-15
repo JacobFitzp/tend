@@ -19,7 +19,8 @@
     "publish": { "provider": "github", "releaseType": "release" },
     "mac": {
       "target": [{ "target": "dmg", "arch": ["arm64"] }],
-      "category": "public.app-category.productivity"
+      "category": "public.app-category.productivity",
+      "identity": null
     },
     "win": {
       "target": "nsis"

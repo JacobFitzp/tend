@@ -32,7 +32,7 @@ Pre-built installers are attached to each [GitHub Release](../../releases):
 | Windows               | `.exe` (NSIS installer) |
 | Linux                 | `.AppImage`             |
 
-> **macOS note:** The app is unsigned. On first launch, right-click → Open to bypass Gatekeeper.
+> **macOS note:** The app is unsigned. If macOS blocks it, open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. Alternatively, run `xattr -cr /Applications/Tend.app` in Terminal.
 
 ## Running locally (web)
 
