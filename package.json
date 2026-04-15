@@ -16,7 +16,7 @@
     "files": ["electron/main.js"],
     "extraResources": [{ "from": "out", "to": "out" }],
     "directories": { "output": "dist" },
-    "publish": { "provider": "github" },
+    "publish": { "provider": "github", "releaseType": "release" },
     "mac": {
       "target": [{ "target": "dmg", "arch": ["arm64"] }],
       "category": "public.app-category.productivity"
