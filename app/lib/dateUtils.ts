@@ -9,47 +9,47 @@ export function getDateKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-export function isWeekend(d: Date): boolean {
-  const day = d.getDay();
-  return day === 0 || day === 6;
+export function isNonWorkday(d: Date, workdays: number[]): boolean {
+  return !workdays.includes(d.getDay());
 }
 
-export function shiftToWeekday(d: Date, dir: number): Date {
+export function shiftToWorkday(d: Date, dir: number, workdays: number[]): Date {
   const r = new Date(d);
-  while (isWeekend(r)) r.setDate(r.getDate() + dir);
+  let guard = 14;
+  while (isNonWorkday(r, workdays) && guard-- > 0) r.setDate(r.getDate() + dir);
   return r;
 }
 
-export function nextWorkday(d: Date): Date {
+export function nextWorkday(d: Date, workdays: number[]): Date {
   const r = new Date(d);
   r.setDate(r.getDate() + 1);
-  return shiftToWeekday(r, 1);
+  return shiftToWorkday(r, 1, workdays);
 }
 
-export function prevWorkday(d: Date): Date {
+export function prevWorkday(d: Date, workdays: number[]): Date {
   const r = new Date(d);
   r.setDate(r.getDate() - 1);
-  return shiftToWeekday(r, -1);
+  return shiftToWorkday(r, -1, workdays);
 }
 
-export function prevWorkdayKey(d: Date): string {
-  return getDateKey(prevWorkday(d));
+export function prevWorkdayKey(d: Date, workdays: number[]): string {
+  return getDateKey(prevWorkday(d, workdays));
 }
 
-export function prevNonOOOWorkdayKey(d: Date, ooo: Record<string, boolean>): string {
-  let cur = prevWorkday(d);
+export function prevNonOOOWorkdayKey(d: Date, ooo: Record<string, boolean>, workdays: number[]): string {
+  let cur = prevWorkday(d, workdays);
   let guard = 60;
-  while (ooo[getDateKey(cur)] && guard-- > 0) cur = prevWorkday(cur);
+  while (ooo[getDateKey(cur)] && guard-- > 0) cur = prevWorkday(cur, workdays);
   return getDateKey(cur);
 }
 
-export function formatDay(d: Date): string {
+export function formatDay(d: Date, workdays: number[]): string {
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const t = new Date(d); t.setHours(0, 0, 0, 0);
   const diff = Math.round((t.getTime() - today.getTime()) / 86400000);
   if (diff === 0) return "Today";
-  if (diff === -1 || (diff < -1 && getDateKey(t) === prevWorkdayKey(today))) return "Yesterday";
-  if (diff === 1 || (diff > 1 && getDateKey(t) === getDateKey(nextWorkday(today)))) return "Tomorrow";
+  if (diff === -1 || (diff < -1 && getDateKey(t) === prevWorkdayKey(today, workdays))) return "Yesterday";
+  if (diff === 1 || (diff > 1 && getDateKey(t) === getDateKey(nextWorkday(today, workdays)))) return "Tomorrow";
   return `${DAYS[d.getDay()]}, ${MONTHS[d.getMonth()]} ${d.getDate()}`;
 }
 

@@ -43,6 +43,7 @@ export interface AppState {
   streak: StreakState;
   celebrated: Record<string, boolean>;
   ooo: Record<string, boolean>;
+  workdays: number[];
 }
 
 export interface ParticleData {

@@ -13,10 +13,14 @@ interface SettingsModalProps {
   onImport: (data: Partial<AppState>) => void;
   soundEnabled: boolean;
   onSoundToggle: (v: boolean) => void;
+  workdays: number[];
+  onWorkdaysChange: (wd: number[]) => void;
   onClose: () => void;
 }
 
-export function SettingsModal({ accent, onAccentChange, types, onTypesChange, onImport, soundEnabled, onSoundToggle, onClose }: SettingsModalProps) {
+const DAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+export function SettingsModal({ accent, onAccentChange, types, onTypesChange, onImport, soundEnabled, onSoundToggle, workdays, onWorkdaysChange, onClose }: SettingsModalProps) {
   const [localTypes, setLocalTypes] = useState<TaskType[]>(types);
   const [editing, setEditing] = useState<number | "new" | null>(null);
   const [dragOverIdx, setDragOverIdx] = useState<number | null>(null);
@@ -76,6 +80,28 @@ export function SettingsModal({ accent, onAccentChange, types, onTypesChange, on
 
         <div style={{marginBottom:24}}>
           <ColourPicker accent={accent} onChange={onAccentChange}/>
+        </div>
+
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:12,fontWeight:500,color:"#555",marginBottom:10}}>Workdays</div>
+          <div style={{display:"flex",gap:6}}>
+            {DAY_LABELS.map((label, i) => {
+              const active = workdays.includes(i);
+              return (
+                <button
+                  key={i}
+                  onClick={() => {
+                    const next = active ? workdays.filter(d => d !== i) : [...workdays, i].sort();
+                    onWorkdaysChange(next);
+                  }}
+                  disabled={active && workdays.length === 1}
+                  style={{flex:1,padding:"6px 0",borderRadius:8,border:`1.5px solid ${active ? accent : "#ddd"}`,background:active ? accent : "transparent",color:active ? "#fff" : "#888",fontSize:12,fontWeight:active ? 600 : 400,cursor:"pointer"}}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={{marginBottom:24,display:"flex",alignItems:"center",justifyContent:"space-between"}}>

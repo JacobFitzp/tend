@@ -1,7 +1,7 @@
 "use client";
 
 import type { AppState } from '../types';
-import { DEFAULT_ACCENT, DEFAULT_TYPES } from './constants';
+import { DEFAULT_ACCENT, DEFAULT_TYPES, DEFAULT_WORKDAYS } from './constants';
 
 function lsGet(key: string): string | null {
   try { return localStorage.getItem(key); } catch { return null; }
@@ -18,6 +18,7 @@ export function loadState(): AppState {
   const st  = lsGet("streak-v1");
   const cel = lsGet("celebrated-v1");
   const ooo = lsGet("ooo-v1");
+  const wd  = lsGet("workdays-v1");
   return {
     tasks:      t   ? JSON.parse(t)   : {},
     xp:         x   ? parseInt(x, 10) : 0,
@@ -26,6 +27,7 @@ export function loadState(): AppState {
     streak:     st  ? JSON.parse(st)  : { count: 0, lastClearedKey: null },
     celebrated: cel ? JSON.parse(cel) : {},
     ooo:        ooo ? JSON.parse(ooo) : {},
+    workdays:   wd  ? JSON.parse(wd)  : DEFAULT_WORKDAYS,
   };
 }
 
@@ -37,6 +39,7 @@ export const store = {
   streak:     (v: AppState["streak"])     => lsSet("streak-v1",     JSON.stringify(v)),
   celebrated: (v: AppState["celebrated"]) => lsSet("celebrated-v1", JSON.stringify(v)),
   ooo:        (v: AppState["ooo"])        => lsSet("ooo-v1",        JSON.stringify(v)),
+  workdays:   (v: AppState["workdays"])  => lsSet("workdays-v1",   JSON.stringify(v)),
   sound:      (v: boolean)               => lsSet("sound-v1",       String(v)),
 };
 

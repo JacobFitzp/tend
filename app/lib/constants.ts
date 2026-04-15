@@ -5,7 +5,7 @@ export const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oc
 export const CONFETTI_COLORS = ["#3B7A3B","#1D9E75","#D85A30","#378ADD","#D4537E","#BA7517","#7AB87A","#06b6d4","#FFD700","#FF6B6B"];
 export const XP_PER_TASK = 20;
 export const XP_PER_SUBTASK = 8;
-export const XP_PER_LEVEL = 100; // base XP required for level 1 → 2; each subsequent level costs 100 more
+export const XP_PER_LEVEL = 500; // base XP required for level 1 → 2; each subsequent level costs 500 more
 
 // XP needed to advance from `level` to `level + 1`
 export function xpForLevel(level: number): number { return XP_PER_LEVEL * level; }
@@ -17,6 +17,7 @@ export function levelFromXp(totalXp: number): number {
 }
 export const COMBO_WINDOW = 4000;
 export const LEVEL_TITLES = ["Newcomer","Apprentice","Go-getter","Achiever","Hustler","Champion","Legend","Mythic"];
+export const DEFAULT_WORKDAYS = [1, 2, 3, 4, 5]; // Mon–Fri
 export const DEFAULT_ACCENT = "#3B7A3B";
 export const ACCENT_PRESETS = ["#3B7A3B","#1D6FA5","#8B3A8B","#C0392B","#D4537E","#D4860A","#2C7A7A","#555555"];
 export const ICON_OPTIONS = ["◇","◈","⬡","⌥","★","●","▲","■","♦","✦","⚑","⊕","⊗","❖"];

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  DEFAULT_ACCENT, DEFAULT_TYPES, XP_PER_TASK, XP_PER_SUBTASK, COMBO_WINDOW,
+  DEFAULT_ACCENT, DEFAULT_TYPES, DEFAULT_WORKDAYS, XP_PER_TASK, XP_PER_SUBTASK, COMBO_WINDOW,
   xpForLevel, xpAtLevel, levelFromXp, nextTid, setTid,
 } from './lib/constants';
 import {
@@ -49,6 +49,7 @@ export default function App() {
   const [comboToast, setComboToast] = useState<{ mult: number; bonus: number; key: number } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [ooo, setOoo] = useState<Record<string, boolean>>({});
+  const [workdays, setWorkdays] = useState<number[]>(DEFAULT_WORKDAYS);
   const comboRef = useRef(0);
   const comboTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const { particles, burst, remove } = useParticles();
@@ -60,7 +61,7 @@ export default function App() {
     try {
       const s = loadState();
       setTasks(s.tasks); setXp(s.xp); setAccent(s.accent); setTypes(s.types);
-      setStreak(s.streak); setCelebrated(s.celebrated); setOoo(s.ooo ?? {});
+      setStreak(s.streak); setCelebrated(s.celebrated); setOoo(s.ooo ?? {}); setWorkdays(s.workdays ?? DEFAULT_WORKDAYS);
       const snd = loadSoundEnabled(); setSoundEnabled(snd); SFX.setEnabled(snd);
       let maxId = 0;
       Object.values(s.tasks).forEach(day => (day as Task[]).forEach(task => {
@@ -111,7 +112,7 @@ export default function App() {
       if (isToday) {
         const todayKey = getDateKey(today);
         setStreak(prev => {
-          const prevWdKey = prevNonOOOWorkdayKey(today, ooo);
+          const prevWdKey = prevNonOOOWorkdayKey(today, ooo, workdays);
           const newCount = (prev.lastClearedKey === prevWdKey || prev.lastClearedKey === todayKey)
             ? prev.count + (prev.lastClearedKey === todayKey ? 0 : 1) : 1;
           const next: StreakState = { count: newCount, lastClearedKey: todayKey };
@@ -151,6 +152,7 @@ export default function App() {
   const changeTypes = (tt: TaskType[]) => { setTypes(tt); store.types(tt); };
   const changeSound = (v: boolean) => { setSoundEnabled(v); SFX.setEnabled(v); store.sound(v); };
   const toggleOOO = () => { const next = { ...ooo, [dateKey]: !ooo[dateKey] }; setOoo(next); store.ooo(next); };
+  const changeWorkdays = (wd: number[]) => { if (wd.length === 0) return; setWorkdays(wd); store.workdays(wd); };
 
   const handleImport = useCallback((data: Partial<AppState>) => {
     if (data.tasks)      { setTasks(data.tasks);   store.tasks(data.tasks); }
@@ -209,7 +211,7 @@ export default function App() {
   };
   const delTask = (id: number) => { SFX.removeTask(); updateTasks(ts => ts.filter(tk => tk.id !== id)); };
   const toggleExp = (id: number) => { if (!expanded[id]) SFX.expand(); setExpanded(e => ({ ...e, [id]: !e[id] })); };
-  const shiftDay = (dir: number) => { SFX.swoosh(dir); setCurrentDate(dir > 0 ? nextWorkday(currentDate) : prevWorkday(currentDate)); };
+  const shiftDay = (dir: number) => { SFX.swoosh(dir); setCurrentDate(dir > 0 ? nextWorkday(currentDate, workdays) : prevWorkday(currentDate, workdays)); };
   const saveLink = (taskId: number, url: string, label: string) => { updateTasks(ts => ts.map(tk => tk.id === taskId ? { ...tk, link: { url, label } } : tk)); setLinkModal(null); };
   const removeLink = (taskId: number) => { updateTasks(ts => ts.map(tk => tk.id === taskId ? { ...tk, link: null } : tk)); setLinkModal(null); };
 
@@ -226,7 +228,7 @@ export default function App() {
   }
 
   return (
-    <div style={{width:"100%",maxWidth:780,margin:"0 auto",padding:"2rem 1.25rem 4rem",fontFamily:"var(--font-sans)",boxSizing:"border-box"}}>
+    <div style={{width:"100%",maxWidth:780,margin:"0 auto",padding:"2rem 1.25rem 0",fontFamily:"var(--font-sans)",boxSizing:"border-box"}}>
       <style>{appStyles}</style>
       <h2 className="sr-only">Tend</h2>
 
@@ -235,7 +237,7 @@ export default function App() {
       {showLevelUp && <div className="lvl-toast" style={{position:"fixed",top:64,left:"50%",background:accent,color:"#fff",padding:"10px 22px",borderRadius:99,fontSize:13,fontWeight:700,zIndex:10000,pointerEvents:"none",whiteSpace:"nowrap",letterSpacing:"0.3px"}}>Level up! Now level {level} ✦</div>}
       {comboToast && <div key={comboToast.key} className="combo-toast" style={{position:"fixed",top:108,left:"50%",background:"#222",color:"#FFD700",padding:"8px 18px",borderRadius:99,fontSize:14,fontWeight:700,zIndex:10000,pointerEvents:"none",whiteSpace:"nowrap"}}>{comboToast.mult}× COMBO · +{comboToast.bonus} XP</div>}
       {linkModal != null && <LinkModal accent={accent} existing={linkModalTask?.link ?? null} onSave={(url, label) => saveLink(linkModal, url, label)} onRemove={() => removeLink(linkModal)} onClose={() => setLinkModal(null)}/>}
-      {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} onClose={() => setShowSettings(false)}/>}
+      {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} workdays={workdays} onWorkdaysChange={changeWorkdays} onClose={() => setShowSettings(false)}/>}
 
       {/* Header */}
       <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
@@ -272,7 +274,7 @@ export default function App() {
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
         <button onClick={() => shiftDay(-1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:18,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>‹</button>
         <div style={{textAlign:"center"}}>
-          <div style={{fontSize:17,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.2px"}}>{formatDay(currentDate)}</div>
+          <div style={{fontSize:17,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.2px"}}>{formatDay(currentDate, workdays)}</div>
           {total > 0 && <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>{done} of {total} done</div>}
           <button onClick={toggleOOO} style={{marginTop:5,fontSize:11,padding:"2px 10px",borderRadius:99,border:`1.5px solid ${isOOO?"#F0A500":"var(--color-border-tertiary)"}`,background:isOOO?"#FFF7E0":"transparent",color:isOOO?"#B07500":"var(--color-text-tertiary)",cursor:"pointer",fontWeight:isOOO?600:400,transition:"all 0.15s"}}>
             {isOOO ? "🏖 Out of office" : "Out of office"}
@@ -347,8 +349,8 @@ export default function App() {
         ))}
       </div>
 
-      {/* Add task */}
-      <div style={{padding:"12px 0",boxSizing:"border-box"}}>
+      {/* Add task — sticky footer */}
+      <div style={{position:"sticky",bottom:0,background:"var(--background)",paddingTop:8,paddingBottom:16,marginTop:8,borderTop:"1.5px solid var(--color-border-tertiary)"}}>
         <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
           <div style={{flex:1,display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",overflow:"visible",transition:"border-color 0.15s",position:"relative"}}>
             <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center"}}>
@@ -358,10 +360,8 @@ export default function App() {
           </div>
           <button onClick={addTask} onMouseDown={e => (e.currentTarget.style.transform = "scale(0.93)")} onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")} style={{padding:"10px 16px",borderRadius:12,border:"none",background:accent,cursor:"pointer",fontSize:20,color:"#fff",fontWeight:700,flexShrink:0}}>+</button>
         </div>
+        {!isToday && <button onClick={() => setCurrentDate(new Date(today))} style={{marginTop:8,width:"100%",padding:"7px",borderRadius:12,border:"1.5px solid var(--color-border-tertiary)",background:"transparent",cursor:"pointer",fontSize:12,color:"var(--color-text-tertiary)",fontWeight:600,letterSpacing:"0.2px",fontFamily:"var(--font-sans)"}}>↩ back to today</button>}
       </div>
-      <button onClick={() => setCurrentDate(new Date(today))} style={{marginTop:10,width:"100%",padding:"9px",borderRadius:12,border:"1.5px solid var(--color-border-tertiary)",background:"transparent",cursor:"pointer",fontSize:12,color:"var(--color-text-tertiary)",fontWeight:600,letterSpacing:"0.2px",fontFamily:"var(--font-sans)",opacity:isToday?0.3:1,transition:"opacity 0.2s"}} disabled={isToday}>
-        ↩ back to today
-      </button>
     </div>
   );
 }
