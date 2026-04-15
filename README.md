@@ -32,7 +32,15 @@ Pre-built installers are attached to each [GitHub Release](../../releases):
 | Windows               | `.exe` (NSIS installer) |
 | Linux                 | `.AppImage`             |
 
-> **macOS note:** The app is unsigned. If macOS blocks it, open **System Settings → Privacy & Security**, scroll down, and click **Open Anyway**. Alternatively, run `xattr -cr /Applications/Tend.app` in Terminal.
+### macOS — "damaged" error
+
+The app is unsigned. macOS will block it with a "damaged" message. To fix this, run the following command in Terminal **after** moving Tend to your Applications folder:
+
+```bash
+xattr -cr /Applications/Tend.app
+```
+
+Then try opening it again. This removes the quarantine flag macOS adds to files downloaded from the internet.
 
 ## Running locally (web)
 
