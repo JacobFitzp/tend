@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Tend
 
-## Getting Started
+A daily task manager with a gentle twist — complete your tasks and watch your flower grow. Built with Next.js and
+packaged as a cross-platform desktop app via Electron.
 
-First, run the development server:
+**Features**
+
+- Satisfying design and sound effects
+- Daily task lists organised by workday
+- Subtasks, task types, importance flagging, and link attachments
+- XP and levelling system with a progressive XP curve and combo multipliers
+- Day streak tracking
+- Drag-and-drop reordering
+- Customisable accent colour and task types
+- JSON import/export
+- All data stored locally — no account, no server
+
+## Screenshots
+
+|                                            |                                  |                                        |
+|--------------------------------------------|----------------------------------|----------------------------------------|
+| ![Task list](images/task-list.png)         | ![All done](images/all-done.png) | ![Empty state](images/empty-state.png) |
+| ![Out of office](images/out-of-office.png) | ![Settings](images/settings.png) |                                        |
+
+## Download
+
+Pre-built installers are attached to each [GitHub Release](../../releases):
+
+| Platform              | File                    |
+|-----------------------|-------------------------|
+| macOS (Apple Silicon) | `.dmg`                  |
+| Windows               | `.exe` (NSIS installer) |
+| Linux                 | `.AppImage`             |
+
+> **macOS note:** The app is unsigned. On first launch, right-click → Open to bypass Gatekeeper.
+
+## Running locally (web)
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Running locally (desktop)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm install
+npm run electron:dev
+```
 
-## Learn More
+This starts the Next.js dev server and opens Electron pointing at it. Hot reload works as normal.
 
-To learn more about Next.js, take a look at the following resources:
+## Building a desktop app
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```bash
+npm run electron:build
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Produces a platform-native installer in `dist/`. The Next.js app is exported as a static site and bundled into the
+Electron package.
 
-## Deploy on Vercel
+## Releases
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Releases are built automatically via GitHub Actions when a new release is created on GitHub. All three platforms build
+in parallel and upload their installers to the release.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+To cut a release:
+
+1. Bump `"version"` in `package.json` and push
+2. Create a GitHub release with a matching tag (e.g. `v1.2.0`)
+3. GitHub Actions builds and attaches the installers automatically
+
+## Contributing
+
+Contributions are welcome. Please open an issue before starting significant work so we can discuss the approach.
+
+```bash
+# Fork the repo, then:
+git clone https://github.com/<your-username>/daily-tasks
+cd daily-tasks
+npm install
+npm run dev
+```
+
+### Project structure
+
+| Path                            | Description                                            |
+|---------------------------------|--------------------------------------------------------|
+| `app/page.tsx`                  | Main application — all state and logic lives here      |
+| `app/components/`               | UI components (TaskCard, flowers, particles, modals)   |
+| `app/lib/`                      | Constants, date utilities, localStorage, sound effects |
+| `app/types.ts`                  | Shared TypeScript types                                |
+| `electron/main.js`              | Electron main process                                  |
+| `.github/workflows/release.yml` | CI release workflow                                    |
+
+### Code style
+
+- No test suite is configured — manual testing is expected for UI changes
+- Keep components focused; avoid abstractions for one-off use cases
+- Sound effects go in `app/lib/sfx.ts`; new visual styles in `app/components/styles.ts`
+
+## License
+
+MIT
