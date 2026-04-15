@@ -1,13 +1,19 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, nativeImage } = require('electron');
 const path = require('path');
 
 function createWindow() {
+  const iconPath = app.isPackaged
+    ? path.join(process.resourcesPath, 'build', 'icon.icns')
+    : path.join(__dirname, '..', 'build', 'icon.icns');
+  const icon = nativeImage.createFromPath(iconPath);
+
   const win = new BrowserWindow({
     width: 780,
     height: 860,
     minWidth: 520,
     minHeight: 600,
     title: 'Tend',
+    icon,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       nodeIntegration: false,

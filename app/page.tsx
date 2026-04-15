@@ -362,14 +362,12 @@ export default function App() {
 
       {/* Add task — sticky footer */}
       <div style={{position:"sticky",bottom:0,background:"var(--background)",paddingTop:8,paddingBottom:16,marginTop:8,borderTop:"1.5px solid var(--color-border-tertiary)",...(isOOO && {display:"none"})}}>
-        <div style={{display:"flex",gap:8,alignItems:"stretch"}}>
-          <div style={{flex:1,display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",overflow:"visible",transition:"border-color 0.15s",position:"relative"}}>
-            <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center"}}>
-              <TypePicker value={newTaskType} onChange={setNewTaskType} types={types}/>
-            </div>
-            <input value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask()} onFocus={() => setTaskInputFocused(true)} onBlur={() => setTaskInputFocused(false)} placeholder={`Add ${resolveType(types, newTaskType).label.toLowerCase()} task...`} style={{flex:1,fontSize:14,padding:"10px 14px",border:"none",outline:"none",background:"transparent",color:"var(--color-text-primary)",fontFamily:"var(--font-sans)"}}/>
+        <div style={{display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",transition:"border-color 0.15s",overflow:"hidden"}}>
+          <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center",flexShrink:0}}>
+            <TypePicker value={newTaskType} onChange={setNewTaskType} types={types}/>
           </div>
-          <button onClick={addTask} onMouseDown={e => (e.currentTarget.style.transform = "scale(0.93)")} onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")} style={{padding:"10px 16px",borderRadius:12,border:"none",background:accent,cursor:"pointer",fontSize:20,color:"#fff",fontWeight:700,flexShrink:0}}>+</button>
+          <input value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask()} onFocus={() => setTaskInputFocused(true)} onBlur={() => setTaskInputFocused(false)} placeholder={`Add ${resolveType(types, newTaskType).label.toLowerCase()} task...`} style={{flex:1,fontSize:14,padding:"10px 14px",border:"none",outline:"none",background:"transparent",color:"var(--color-text-primary)",fontFamily:"var(--font-sans)"}}/>
+          <button onClick={addTask} onMouseDown={e => (e.currentTarget.style.transform = "scale(0.93)")} onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")} style={{padding:"10px 16px",border:"none",background:accent,cursor:"pointer",fontSize:20,color:"#fff",fontWeight:700,flexShrink:0}}>+</button>
         </div>
         {!isToday && <button onClick={() => setCurrentDate(new Date(today))} style={{marginTop:8,width:"100%",padding:"7px",borderRadius:12,border:"1.5px solid var(--color-border-tertiary)",background:"transparent",cursor:"pointer",fontSize:12,color:"var(--color-text-tertiary)",fontWeight:600,letterSpacing:"0.2px",fontFamily:"var(--font-sans)"}}>↩ back to today</button>}
       </div>

@@ -45,7 +45,7 @@ export const SFX: SfxHandle = (() => {
   const playWoosh = (): void => {
     if (!enabled) return;
     try {
-      if (!wooshEl) wooshEl = new Audio('/assets/sounds/swoosh.wav');
+      if (!wooshEl) wooshEl = new Audio('assets/sounds/swoosh.wav');
       const a = wooshEl.cloneNode() as HTMLAudioElement;
       a.play();
     } catch { /* ignore audio errors */ }
