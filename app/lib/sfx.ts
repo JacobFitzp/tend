@@ -55,9 +55,9 @@ export const SFX: SfxHandle = (() => {
     addTask:    () => beep(440, 0.15, 0.07, "sine", 560),
     removeTask:    () => beep(320, 0.18, 0.07, "sine", 220),
     markImportant: () => beep(660, 0.1, 0.08, "sine", 880),
-    swoosh: (_dir: number) => playWoosh(),
+    swoosh: (_dir?: number) => playWoosh(), // eslint-disable-line @typescript-eslint/no-unused-vars
     expand: () => beep(520, 0.12, 0.04, "sine", 580),
-    tick:     () => beep(880, 0.12, 0.14, "sine", 660),
+    tick:     () => { beep(660, 0.16, 0.13, "sine", 1046); setTimeout(() => beep(1046, 0.1, 0.07, "sine", 1318), 70); },
     untick:   () => beep(660, 0.15, 0.08, "sine", 420),
     subtick:  () => beep(1200, 0.08, 0.08, "sine", 1200),
     combo:    (n: number) => chord([523, 659, 784, 1047, 1319].slice(0, Math.min(n, 5)), 0.06, 0.12),

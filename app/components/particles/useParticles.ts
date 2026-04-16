@@ -5,11 +5,12 @@ import type { ParticleData } from '../../types';
 
 export function useParticles() {
   const [particles, setP] = useState<ParticleData[]>([]);
-  const burst = useCallback((x: number, y: number, count = 18, size = 1) => {
+  const burst = useCallback((x: number, y: number, count = 18, size = 1, colors?: string[]) => {
+    const palette = colors ?? CONFETTI_COLORS;
     const n: ParticleData[] = Array.from({ length: count }, () => ({
       id: nextPid(),
       x, y, size,
-      color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+      color: palette[Math.floor(Math.random() * palette.length)],
     }));
     setP(p => [...p, ...n]);
   }, []);

@@ -53,13 +53,13 @@ export function TaskCard({
       style={{
         background: isImp ? "linear-gradient(135deg,#FDF3E0 0%,var(--color-background-primary) 55%)" : "var(--color-background-primary)",
         border: isImp ? "1.5px solid #F0B85A" : "1.5px solid var(--color-border-secondary)",
-        borderRadius: 16, overflow: "hidden", opacity: task.done ? 0.5 : 1,
+        borderRadius: 16, overflow: "visible", opacity: task.done ? 0.5 : 1,
         borderLeft: `4px solid ${task.done ? "#1D9E75" : isImp ? "#EF9F27" : tp.color}`,
         boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
         cursor: "grab", width: "100%", minWidth: 0, boxSizing: "border-box",
       }}
     >
-      <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px 11px 12px"}}>
+      <div style={{display:"flex",alignItems:"center",gap:8,padding:"11px 12px 11px 12px",borderTopLeftRadius:14,borderTopRightRadius:14,overflow:"hidden"}}>
         <span style={{color:"var(--color-text-tertiary)",fontSize:11,cursor:"grab",userSelect:"none",flexShrink:0,opacity:0.5}}>⠿</span>
         <button
           onClick={onToggle}
@@ -84,7 +84,7 @@ export function TaskCard({
             style={{flex:1,fontSize:14,color:"var(--color-text-primary)",textDecoration:task.done?"line-through":"none",fontWeight:isImp?600:400,cursor:"text",lineHeight:1.4}}
           >{task.title}</span>
         )}
-        {subTotal > 0 && <span style={{fontSize:11,padding:"2px 7px",borderRadius:99,background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",fontWeight:600,flexShrink:0}}>{subDone}/{subTotal}</span>}
+        {subTotal > 0 && <span onClick={e => { e.stopPropagation(); onToggleExpand(); }} title="Show subtasks" style={{fontSize:11,padding:"2px 7px",borderRadius:99,background:"var(--color-background-secondary)",color:"var(--color-text-secondary)",fontWeight:600,flexShrink:0,cursor:"pointer"}}>{subDone}/{subTotal}</span>}
         <span title={tp.label} style={{width:20,height:20,borderRadius:"50%",background:tbg(tp),border:`1.5px solid ${tborder(tp)}`,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:10,color:tp.color}}>{tp.icon}</span>
         {hasLink && (
           <span
@@ -95,7 +95,7 @@ export function TaskCard({
         )}
         <button onClick={onToggleImportant} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:isImp?1:0.18,color:"#EF9F27",padding:"0 1px",lineHeight:1,flexShrink:0}}>★</button>
         <button onClick={onToggleExpand} style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)",fontSize:10,padding:"2px 3px",lineHeight:1,flexShrink:0,opacity:0.7}}>{isExpanded ? "▲" : "▼"}</button>
-        <button onClick={onDelete} style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)",fontSize:16,padding:"1px 2px",lineHeight:1,flexShrink:0,opacity:0.5}}>×</button>
+        <button onClick={onDelete} className="delete-btn" style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)",fontSize:16,padding:"1px 2px",lineHeight:1,flexShrink:0}}>×</button>
       </div>
 
       {subTotal > 0 && !isExpanded && (
@@ -105,10 +105,10 @@ export function TaskCard({
       )}
 
       {isExpanded && (
-        <div style={{borderTop:"1.5px solid var(--color-border-tertiary)",padding:"12px",background:"var(--color-background-secondary)",overflow:"hidden"}}>
+        <div style={{borderTop:"1.5px solid var(--color-border-tertiary)",padding:"12px",background:"var(--color-background-primary)",borderBottomLeftRadius:16,borderBottomRightRadius:16}}>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:6,fontWeight:600,letterSpacing:"0.3px",textTransform:"uppercase"}}>Type</div>
-            <TypePicker value={task.type} onChange={onTypeChange} types={types}/>
+            <div style={{display:"inline-flex"}}><TypePicker value={task.type} onChange={onTypeChange} types={types}/></div>
           </div>
           <div style={{marginBottom:12}}>
             <div style={{fontSize:11,color:"var(--color-text-tertiary)",marginBottom:6,fontWeight:600,letterSpacing:"0.3px",textTransform:"uppercase"}}>Link</div>

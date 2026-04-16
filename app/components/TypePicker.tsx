@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import type { TaskType } from '../types';
 
 interface TypePickerProps {
@@ -10,29 +11,46 @@ interface TypePickerProps {
 
 export function TypePicker({ value, onChange, types }: TypePickerProps) {
   const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState<{top:number;left:number}>({top:0,left:0});
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const selected = types.find(t => t.id === value) ?? types[0];
+
+  const openMenu = () => {
+    if (btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect();
+      setMenuPos({ top: r.top - 6, left: r.left });
+    }
+    setOpen(o => !o);
+  };
 
   useEffect(() => {
     if (!open) return;
     const handle = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (
+        btnRef.current && !btnRef.current.contains(e.target as Node) &&
+        menuRef.current && !menuRef.current.contains(e.target as Node)
+      ) setOpen(false);
     };
     document.addEventListener('mousedown', handle);
     return () => document.removeEventListener('mousedown', handle);
   }, [open]);
 
   return (
-    <div ref={ref} style={{position:"relative",flexShrink:0}}>
+    <div style={{position:"relative",flexShrink:0}}>
       <button
-        onClick={() => setOpen(o => !o)}
+        ref={btnRef}
+        onClick={openMenu}
         title={selected.label}
         style={{display:"flex",alignItems:"center",justifyContent:"center",width:"100%",height:"100%",minWidth:38,padding:"0 12px",border:"none",background:"transparent",cursor:"pointer",fontSize:16,lineHeight:1}}
       >
         <span style={{color:selected.color}}>{selected.icon}</span>
       </button>
-      {open && (
-        <div style={{position:"absolute",bottom:"calc(100% + 6px)",left:0,background:"var(--color-background-primary)",borderRadius:10,border:"1.5px solid var(--color-border-secondary)",boxShadow:"0 4px 18px rgba(0,0,0,0.1)",zIndex:1000,minWidth:150,overflow:"hidden"}}>
+      {open && createPortal(
+        <div
+          ref={menuRef}
+          style={{position:"fixed",top:menuPos.top,left:menuPos.left,transform:"translateY(-100%)",background:"var(--color-background-primary)",borderRadius:10,border:"1.5px solid var(--color-border-secondary)",boxShadow:"0 4px 18px rgba(0,0,0,0.15)",zIndex:99999,minWidth:150,overflow:"hidden"}}
+        >
           {types.map(t => (
             <button
               key={t.id}
@@ -43,7 +61,8 @@ export function TypePicker({ value, onChange, types }: TypePickerProps) {
               <span style={{fontSize:13,color:"var(--color-text-primary)",fontWeight:value===t.id?600:400}}>{t.label}</span>
             </button>
           ))}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

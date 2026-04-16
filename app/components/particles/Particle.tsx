@@ -11,14 +11,13 @@ interface ParticleProps {
 
 export function Particle({ x, y, color, size = 1, onDone }: ParticleProps) {
   const [pos, setPos] = useState({ x, y, opacity: 1, rot: 0 });
-  const r = useRef({
-    x, y,
+  const [init] = useState(() => ({
     vx: (Math.random() - 0.5) * 10 * size,
     vy: -(Math.random() * 8 + 3) * size,
-    opacity: 1,
-    f: 0,
     rot: Math.random() * 360,
-  });
+    sz: (Math.random() * 8 + 5) * size,
+  }));
+  const r = useRef({ x, y, vx: init.vx, vy: init.vy, opacity: 1, f: 0, rot: init.rot });
   useEffect(() => {
     const tick = () => {
       const s = r.current;
@@ -28,13 +27,13 @@ export function Particle({ x, y, color, size = 1, onDone }: ParticleProps) {
       s.f = requestAnimationFrame(tick);
     };
     r.current.f = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(r.current.f);
+    const anim = r.current;
+    return () => cancelAnimationFrame(anim.f);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
-  const sz = (Math.random() * 8 + 5) * size;
   return (
     <div style={{
       position: "fixed", left: pos.x, top: pos.y,
-      width: sz, height: sz * 0.6,
+      width: init.sz, height: init.sz * 0.6,
       borderRadius: "2px", background: color, opacity: pos.opacity,
       pointerEvents: "none", zIndex: 9999,
       transform: `translate(-50%,-50%) rotate(${pos.rot}deg)`,

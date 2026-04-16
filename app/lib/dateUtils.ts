@@ -1,5 +1,5 @@
 import { DAYS, MONTHS, LEVEL_TITLES } from './constants';
-import type { TaskType } from '../types';
+import type { TaskType, StreakState } from '../types';
 
 export function getLevelTitle(l: number): string {
   return LEVEL_TITLES[Math.min(l - 1, LEVEL_TITLES.length - 1)];
@@ -69,6 +69,30 @@ export function seededFloat(seed: number): number {
 
 export function getDayFlower(dateKey: string): number {
   return Math.floor(seededFloat(hashStr(dateKey)) * 10);
+}
+
+/**
+ * Pure streak computation. Call this when the user has just cleared all tasks for today.
+ * Returns the next StreakState to persist.
+ *
+ * Rules:
+ *  - lastClearedKey === prev non-OOO workday  → continue streak (count + 1)
+ *  - lastClearedKey === today                 → idempotent re-clear, no change
+ *  - anything else                            → streak broken, reset to 1
+ */
+export function computeStreak(
+  current: StreakState,
+  today: Date,
+  ooo: Record<string, boolean>,
+  workdays: number[],
+): StreakState {
+  const todayKey = getDateKey(today);
+  const prevWdKey = prevNonOOOWorkdayKey(today, ooo, workdays);
+  const newCount =
+    current.lastClearedKey === prevWdKey ? current.count + 1
+    : current.lastClearedKey === todayKey ? current.count
+    : 1;
+  return { count: newCount, lastClearedKey: todayKey };
 }
 
 export function resolveType(types: TaskType[], id: string): TaskType {

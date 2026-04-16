@@ -8,17 +8,22 @@ export const appStyles = `
 @keyframes impPulse{0%,100%{box-shadow:0 0 0 0 rgba(239,159,39,0.35)}50%{box-shadow:0 0 0 5px rgba(239,159,39,0)}}
 @keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
 @keyframes bannerIn{0%{opacity:0;transform:translateY(10px) scale(0.95)}40%{opacity:1;transform:translateY(-3px) scale(1.02)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes barSweep{0%{transform:translateX(-100%)}100%{transform:translateX(350%)}}
 .task-card{animation:fadeSlideIn 0.2s ease;transition:box-shadow 0.2s,transform 0.15s,opacity 0.3s}
 .task-card:hover{transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.1)}
 .check-btn{transition:transform 0.15s,background 0.2s}.check-btn:hover{transform:scale(1.1)}
 .check-btn.pop{animation:pop 0.4s ease}
 .xp-bar-fill,.day-bar-fill{transition:width 0.5s cubic-bezier(.4,0,.2,1)}
+.bar-sweep{position:absolute;top:0;bottom:0;left:0;width:35%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.45),transparent);animation:barSweep 1.8s ease-in-out infinite;pointer-events:none}
 .lvl-toast{animation:levelUpAnim 1.8s ease forwards}
 .combo-toast{animation:comboAnim 1.4s ease forwards}
 .plant-idle{animation:plantBob 3s ease-in-out infinite}
 .plant-celebrate{animation:plantCelebrate 0.7s ease}
 .imp-card{animation:impPulse 2.5s ease-in-out infinite}
 .drag-over{outline:2px dashed #aaa;outline-offset:2px}
+.task-card .delete-btn{opacity:0;transition:opacity 0.15s}.task-card:hover .delete-btn,.task-card:focus-within .delete-btn{opacity:0.5}
+@keyframes doneIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}.done-section-header{display:flex;align-items:center;gap:8px;cursor:pointer;padding:6px 0;user-select:none}.done-section-header:hover .done-toggle{opacity:1}
 .spinner{animation:spin 0.8s linear infinite}
 .banner-in{animation:bannerIn 0.5s ease forwards}
+@keyframes comboPulse{0%{transform:scale(0.6) translateX(4px);opacity:0}60%{transform:scale(1.18);opacity:1}100%{transform:scale(1);opacity:1}}.combo-live{animation:comboPulse 0.25s ease forwards}
 `;

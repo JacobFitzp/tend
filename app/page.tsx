@@ -6,8 +6,8 @@ import {
   xpForLevel, xpAtLevel, levelFromXp, nextTid, setTid,
 } from './lib/constants';
 import {
-  getDateKey, formatDay, nextWorkday, prevWorkday, prevWorkdayKey, prevNonOOOWorkdayKey,
-  getDayFlower, getLevelTitle, resolveType,
+  getDateKey, formatDay, nextWorkday, prevWorkday,
+  getDayFlower, getLevelTitle, resolveType, computeStreak,
 } from './lib/dateUtils';
 import { SFX } from './lib/sfx';
 import { loadState, loadSoundEnabled, store } from './lib/storage';
@@ -48,6 +48,7 @@ export default function App() {
   const [combo, setCombo] = useState(0);
   const [comboToast, setComboToast] = useState<{ mult: number; bonus: number; key: number } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [doneCollapsed, setDoneCollapsed] = useState(false);
   const [ooo, setOoo] = useState<Record<string, boolean>>({});
   const [workdays, setWorkdays] = useState<number[]>(DEFAULT_WORKDAYS);
   const comboRef = useRef(0);
@@ -61,6 +62,7 @@ export default function App() {
   useEffect(() => {
     try {
       const s = loadState();
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTasks(s.tasks); setXp(s.xp); setAccent(s.accent); setTypes(s.types);
       setStreak(s.streak); setCelebrated(s.celebrated); setOoo(s.ooo ?? {}); setWorkdays(s.workdays ?? DEFAULT_WORKDAYS);
       const snd = loadSoundEnabled(); setSoundEnabled(snd); SFX.setEnabled(snd);
@@ -77,6 +79,8 @@ export default function App() {
   const dateKey = getDateKey(currentDate);
   const dayTasks = tasks[dateKey] ?? [];
   const sorted = [...dayTasks].sort((a, b) => (b.important ? 1 : 0) - (a.important ? 1 : 0));
+  const activeTasks = sorted.filter(t => !t.done);
+  const doneTasks = sorted.filter(t => t.done);
   const done = dayTasks.filter(t => t.done).length;
   const total = dayTasks.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
@@ -96,6 +100,7 @@ export default function App() {
 
   useEffect(() => {
     if (level > prevLevel) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowLevelUp(true); SFX.levelUp();
       setTimeout(() => setShowLevelUp(false), 1800);
       setPrevLevel(level);
@@ -104,21 +109,21 @@ export default function App() {
 
   useEffect(() => {
     if (allDone && !prevAllDone.current && !celebrated[dateKey]) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       SFX.dayClear(); setCelebrating(true);
       setTimeout(() => setCelebrating(false), 700);
       const cx = window.innerWidth / 2, cy = window.innerHeight * 0.35;
-      for (let i = 0; i < 6; i++) setTimeout(() => burst(cx + (Math.random() - 0.5) * 200, cy + (Math.random() - 0.5) * 100, 12, 1.6), i * 80);
+      const celebColors = [accent, accent + "CC", "#FFD700", "#fff", accent + "88"];
+      for (let i = 0; i < 6; i++) setTimeout(() => burst(cx + (Math.random() - 0.5) * 200, cy + (Math.random() - 0.5) * 100, 12, 1.6, celebColors), i * 80);
       const newCel = { ...celebrated, [dateKey]: true };
       setCelebrated(newCel); store.celebrated(newCel);
       if (isToday) {
-        const todayKey = getDateKey(today);
-        setStreak(prev => {
-          const prevWdKey = prevNonOOOWorkdayKey(today, ooo, workdays);
-          const newCount = (prev.lastClearedKey === prevWdKey || prev.lastClearedKey === todayKey)
-            ? prev.count + (prev.lastClearedKey === todayKey ? 0 : 1) : 1;
-          const next: StreakState = { count: newCount, lastClearedKey: todayKey };
-          store.streak(next); return next;
-        });
+        const next = computeStreak(streak, today, ooo, workdays);
+        setStreak(next); store.streak(next);
+        const MILESTONES = [5, 10, 25, 50, 100];
+        if (MILESTONES.includes(next.count)) {
+          for (let i = 0; i < 12; i++) setTimeout(() => burst(cx + (Math.random() - 0.5) * 380, cy + (Math.random() - 0.5) * 200, 22, 2, celebColors), 600 + i * 65);
+        }
       }
     }
     prevAllDone.current = allDone;
@@ -192,7 +197,7 @@ export default function App() {
     const task = dayTasks.find(t => t.id === taskId);
     if (!task) return;
     if (!task.done) {
-      SFX.tick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 18, 1); earnXp(XP_PER_TASK);
+      SFX.tick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 18, 1, [accent, accent + "CC", accent + "88", "#fff", "#FFD700"]); earnXp(XP_PER_TASK);
       setFlash(f => ({ ...f, [taskId]: true })); setTimeout(() => setFlash(f => { const n = { ...f }; delete n[taskId]; return n; }), 400);
     } else { SFX.untick(); loseXp(XP_PER_TASK); }
     updateTasks(ts => ts.map(tk => tk.id !== taskId ? tk : { ...tk, done: !tk.done }));
@@ -200,7 +205,7 @@ export default function App() {
 
   const toggleSub = (taskId: number, subId: number, isDone: boolean, e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
-    if (!isDone) { SFX.subtick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, 0.7); earnXp(XP_PER_SUBTASK); }
+    if (!isDone) { SFX.subtick(); burst(rect.left + rect.width / 2, rect.top + rect.height / 2, 8, 0.7, [accent, accent + "AA", "#fff"]); earnXp(XP_PER_SUBTASK); }
     else { SFX.untick(); loseXp(XP_PER_SUBTASK); }
     updateTasks(ts => ts.map(tk => tk.id !== taskId ? tk : { ...tk, subtasks: tk.subtasks.map(s => s.id === subId ? { ...s, done: !s.done } : s) }));
   };
@@ -229,7 +234,7 @@ export default function App() {
   }
 
   return (
-    <div style={{width:"100%",maxWidth:780,margin:"0 auto",padding:"2rem 1.25rem 0",fontFamily:"var(--font-sans)",boxSizing:"border-box"}}>
+    <div style={{width:"100%",maxWidth:780,margin:"0 auto",padding:"0 1.25rem 0",fontFamily:"var(--font-sans)",boxSizing:"border-box"}}>
       <style>{appStyles}</style>
       <h2 className="sr-only">Tend</h2>
 
@@ -240,61 +245,78 @@ export default function App() {
       {linkModal != null && <LinkModal accent={accent} existing={linkModalTask?.link ?? null} onSave={(url, label) => saveLink(linkModal, url, label)} onRemove={() => removeLink(linkModal)} onClose={() => setLinkModal(null)}/>}
       {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} workdays={workdays} onWorkdaysChange={changeWorkdays} onClose={() => setShowSettings(false)}/>}
 
+      {/* Drag handle strip at the very top */}
+      <div style={{height:32,width:"100%",WebkitAppRegion:"drag",cursor:"grab",marginBottom:-32,position:"relative",zIndex:1} as React.CSSProperties}/>
+
       {/* Header */}
-      <div style={{display:"flex",alignItems:"center",marginBottom:12,WebkitAppRegion:"drag"} as React.CSSProperties}>
+      <div style={{display:"flex",alignItems:"center",marginBottom:12,paddingTop:32,WebkitAppRegion:"drag"} as React.CSSProperties}>
         <div style={{fontSize:20,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.5px",flex:1}}>Tend</div>
         <button onClick={() => setShowSettings(s => !s)} style={{WebkitAppRegion:"no-drag",background:showSettings?ab:"transparent",border:`1.5px solid ${showSettings?aborder:"var(--color-border-tertiary)"}`,borderRadius:10,padding:"5px 8px",cursor:"pointer",fontSize:18,color:showSettings?accent:"var(--color-text-tertiary)",lineHeight:1,transition:"all 0.15s"} as React.CSSProperties}>⚙</button>
       </div>
 
       {/* Plant + XP ring */}
-      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:12,gap:5}}>
+      <div style={{display:"flex",flexDirection:"column",alignItems:"center",marginBottom:16,gap:4}}>
         <div style={{position:"relative",width:130,height:130}}>
           <svg width="130" height="130" viewBox="0 0 130 130" style={{position:"absolute",top:0,left:0}}>
+            <defs>
+              <linearGradient id="xpGrad" gradientUnits="userSpaceOnUse" x1="7" y1="65" x2="123" y2="65">
+                <stop offset="0%" stopColor={accent} stopOpacity="0.4"/>
+                <stop offset="50%" stopColor={accent} stopOpacity="1"/>
+                <stop offset="100%" stopColor={accent} stopOpacity="0.4"/>
+                <animateTransform attributeName="gradientTransform" type="rotate"
+                  values="0 65 65;180 65 65;0 65 65" dur="3s"
+                  calcMode="spline" keyTimes="0;0.5;1" keySplines="0.45 0 0.55 1;0.45 0 0.55 1"
+                  repeatCount="indefinite"/>
+              </linearGradient>
+            </defs>
             <circle cx="65" cy="65" r="58" fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="5"/>
-            <circle cx="65" cy="65" r="58" fill="none" stroke={accent} strokeWidth="5" strokeLinecap="round"
+            <circle cx="65" cy="65" r="58" fill="none" stroke="url(#xpGrad)" strokeWidth="5" strokeLinecap="round"
               strokeDasharray={`${2*Math.PI*58}`}
               strokeDashoffset={`${2*Math.PI*58*(1 - lvlPct/100)}`}
               style={{transform:"rotate(-90deg)",transformOrigin:"65px 65px",transition:"stroke-dashoffset 0.5s cubic-bezier(.4,0,.2,1)"}}/>
           </svg>
-          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)"}}>
+          <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%, calc(-50% - 5px))"}}>
             <div className={celebrating ? "plant-celebrate" : plantDead ? "" : "plant-idle"} style={{width:96,height:96,display:"flex",alignItems:"center",justifyContent:"center"}}>
               <svg width="96" height="96" viewBox="0 0 100 110"><FlowerPlant index={flowerIdx} stage={plantStage} dead={plantDead}/></svg>
             </div>
           </div>
           <div style={{position:"absolute",bottom:4,right:4,width:24,height:24,borderRadius:"50%",background:accent,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",boxShadow:"0 1px 4px rgba(0,0,0,0.18)"}}>{level}</div>
         </div>
-        <div style={{display:"flex",alignItems:"center",gap:8}}>
-          <div style={{fontSize:12,fontWeight:600,color:"var(--color-text-primary)"}}>{getLevelTitle(level)}</div>
-          <div style={{display:"flex",alignItems:"center",gap:3}}>
-            <span style={{fontSize:11}}>🔥</span>
-            <span style={{fontSize:12,fontWeight:700,color:"var(--color-text-primary)"}}>{streak.count}</span>
-          </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span style={{fontSize:13,fontWeight:600,color:"var(--color-text-primary)"}}>{getLevelTitle(level)}</span>
+          {streak.count > 0 && <>
+            <span style={{color:"var(--color-border-secondary)"}}>·</span>
+            <span style={{fontSize:13,fontWeight:600,color:"var(--color-text-primary)"}}>🔥 {streak.count}</span>
+          </>}
+          {combo > 1 && <>
+            <span style={{color:"var(--color-border-secondary)"}}>·</span>
+            <span key={combo} className="combo-live" style={{fontSize:12,fontWeight:700,color:"#FFD700",background:"#1a1a1a",padding:"1px 8px",borderRadius:99}}>⚡ {combo}×</span>
+          </>}
         </div>
-        <div style={{display:"flex",gap:10,alignItems:"center"}}>
-          <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{plantDead ? `${flowerName} wilted 🥀` : `${flowerName} · ${stageNames[plantStage]}`}</div>
-          <div style={{fontSize:10,color:"var(--color-text-tertiary)"}}>{lvlXp}/{lvlNeeded} xp</div>
+        <div style={{fontSize:11,color:"var(--color-text-tertiary)"}}>
+          {plantDead ? `${flowerName} wilted 🥀` : `${flowerName} · ${stageNames[plantStage]}`}{" · "}{lvlXp}/{lvlNeeded} xp
         </div>
-        {combo > 1 && <div style={{fontSize:10,color:accent,fontWeight:700,letterSpacing:"0.3px"}}>{combo}× combo — keep going!</div>}
       </div>
 
       {/* Day nav */}
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
-        <button onClick={() => shiftDay(-1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:18,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>‹</button>
-        <div style={{textAlign:"center",position:"relative",display:"flex",flexDirection:"column",alignItems:"center"}}>
+        <button onClick={() => shiftDay(-1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:24,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>‹</button>
+        <div style={{textAlign:"center",position:"relative",display:"flex",flexDirection:"column",alignItems:"center",gap:4}}>
           <input ref={dateInputRef} type="date"
             value={`${currentDate.getFullYear()}-${String(currentDate.getMonth()+1).padStart(2,"0")}-${String(currentDate.getDate()).padStart(2,"0")}`}
             onChange={e => { const [y,m,d] = e.target.value.split("-").map(Number); if (y && m && d) setCurrentDate(new Date(y, m-1, d)); }}
             style={{position:"absolute",opacity:0,pointerEvents:"none",width:0,height:0}}/>
           <button onClick={() => dateInputRef.current?.showPicker()} style={{fontSize:17,fontWeight:700,color:"var(--color-text-primary)",letterSpacing:"-0.2px",background:"none",border:"none",cursor:"pointer",padding:0,fontFamily:"var(--font-sans)"}}>{formatDay(currentDate, workdays)}</button>
-          {total > 0 && <div style={{fontSize:11,color:"var(--color-text-secondary)",marginTop:2}}>{done} of {total} done</div>}
-          {(total === 0 || isOOO) && <button onClick={toggleOOO} style={{marginTop:5,fontSize:11,padding:"2px 10px",borderRadius:99,border:`1.5px solid ${isOOO?"#F0A500":"var(--color-border-tertiary)"}`,background:isOOO?"#FFF7E0":"transparent",color:isOOO?"#B07500":"var(--color-text-tertiary)",cursor:"pointer",fontWeight:isOOO?600:400,transition:"all 0.15s"}}>
+          {total > 0 && <div style={{fontSize:11,color:"var(--color-text-secondary)"}}>{done} of {total} done</div>}
+          {!isToday && <button onClick={() => setCurrentDate(new Date(today))} style={{fontSize:11,color:"var(--color-text-secondary)",background:"var(--color-background-secondary)",border:"1.5px solid var(--color-border-secondary)",borderRadius:99,cursor:"pointer",padding:"2px 10px",fontFamily:"var(--font-sans)"}}>↩ today</button>}
+          {(total === 0 || isOOO) && <button onClick={toggleOOO} style={{fontSize:11,padding:"2px 10px",borderRadius:99,border:`1.5px solid ${isOOO?"#F0A500":"var(--color-border-tertiary)"}`,background:isOOO?"#FFF7E0":"transparent",color:isOOO?"#B07500":"var(--color-text-tertiary)",cursor:"pointer",fontWeight:isOOO?600:400,transition:"all 0.15s"}}>
             {isOOO ? "🏖 Out of office" : "Out of office"}
           </button>}
         </div>
-        <button onClick={() => shiftDay(1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:18,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>›</button>
+        <button onClick={() => shiftDay(1)} style={{background:"var(--color-background-primary)",border:"1.5px solid var(--color-border-tertiary)",borderRadius:99,cursor:"pointer",fontSize:24,color:"var(--color-text-secondary)",width:38,height:38,display:"flex",alignItems:"center",justifyContent:"center",transition:"border-color 0.15s"}}>›</button>
       </div>
 
-      {total > 0 && <div style={{height:4,background:"var(--color-border-tertiary)",borderRadius:99,marginBottom:12,overflow:"hidden"}}><div className="day-bar-fill" style={{height:"100%",width:`${pct}%`,background:allDone?"#1D9E75":accent,borderRadius:99}}/></div>}
+      {total > 0 && <div style={{height:7,background:"var(--color-border-tertiary)",borderRadius:99,marginBottom:12,overflow:"hidden"}}><div className="day-bar-fill" style={{height:"100%",width:`${pct}%`,background:allDone?"#1D9E75":accent,borderRadius:99,position:"relative",overflow:"hidden"}}><div className="bar-sweep"/></div></div>}
 
       {allDone && (
         <div className="banner-in" style={{background:"linear-gradient(135deg,#EBF5DB,#D5EDD5)",border:"1.5px solid #B8D98A",borderRadius:12,padding:"10px 16px",marginBottom:12,display:"flex",alignItems:"center",gap:10}}>
@@ -316,7 +338,7 @@ export default function App() {
             </div>
           </div>
         )}
-        {sorted.map(task => (
+        {activeTasks.map(task => (
           <TaskCard
             key={task.id}
             task={task}
@@ -358,19 +380,81 @@ export default function App() {
             onDragEnd={() => { dragId.current = null; setDragOverId(null); }}
           />
         ))}
+        {doneTasks.length > 0 && (
+          <>
+            <div
+              className="done-section-header"
+              onClick={() => setDoneCollapsed(c => !c)}
+              style={{marginTop:activeTasks.length > 0 ? 4 : 0}}
+            >
+              <div style={{flex:1,height:"1px",background:"var(--color-border-tertiary)"}}/>
+              <span style={{fontSize:11,color:"var(--color-text-tertiary)",fontWeight:600,letterSpacing:"0.3px",whiteSpace:"nowrap"}}>Completed ({doneTasks.length})</span>
+              <span className="done-toggle" style={{fontSize:10,color:"var(--color-text-tertiary)",opacity:0.5,transition:"opacity 0.15s"}}>{doneCollapsed ? "▶" : "▼"}</span>
+              <div style={{flex:1,height:"1px",background:"var(--color-border-tertiary)"}}/>
+            </div>
+            {!doneCollapsed && doneTasks.map(task => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                types={types}
+                accent={accent}
+                isExpanded={!!expanded[task.id]}
+                isFlash={!!flash[task.id]}
+                isEditing={editingId === task.id}
+                editText={editText}
+                newSubText={newSub[task.id] ?? ""}
+                isDragOver={dragOverId === task.id}
+                onToggle={e => toggleTask(task.id, e)}
+                onToggleSub={(subId, isDone, e) => toggleSub(task.id, subId, isDone, e)}
+                onToggleImportant={() => toggleImportant(task.id)}
+                onDelete={() => delTask(task.id)}
+                onToggleExpand={() => toggleExp(task.id)}
+                onStartEdit={e => startEdit(task, e)}
+                onCommitEdit={() => commitEdit(task.id)}
+                onCancelEdit={() => setEditingId(null)}
+                onEditTextChange={setEditText}
+                onSubTextChange={text => setNewSub(s => ({ ...s, [task.id]: text }))}
+                onAddSubtask={() => addSubtask(task.id)}
+                onTypeChange={v => updateTasks(ts => ts.map(tk => tk.id === task.id ? { ...tk, type: v } : tk))}
+                onDeleteSub={subId => updateTasks(ts => ts.map(tk => tk.id === task.id ? { ...tk, subtasks: tk.subtasks.filter(s => s.id !== subId) } : tk))}
+                onOpenLinkModal={() => setLinkModal(task.id)}
+                onDragStart={() => { dragId.current = task.id; }}
+                onDragOver={e => { e.preventDefault(); setDragOverId(task.id); }}
+                onDrop={e => {
+                  e.preventDefault();
+                  if (dragId.current === task.id) { dragId.current = null; setDragOverId(null); return; }
+                  updateTasks(ts => {
+                    const arr = [...ts];
+                    const fi = arr.findIndex(t => t.id === dragId.current), ti = arr.findIndex(t => t.id === task.id);
+                    const [item] = arr.splice(fi, 1); arr.splice(ti, 0, item);
+                    return arr;
+                  });
+                  dragId.current = null; setDragOverId(null);
+                }}
+                onDragEnd={() => { dragId.current = null; setDragOverId(null); }}
+              />
+            ))}
+          </>
+        )}
       </div>
 
-      {/* Add task — sticky footer */}
-      <div style={{position:"sticky",bottom:0,background:"var(--background)",paddingTop:8,paddingBottom:16,marginTop:8,borderTop:"1.5px solid var(--color-border-tertiary)",...(isOOO && {display:"none"})}}>
-        <div style={{display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-secondary)",transition:"border-color 0.15s",overflow:"hidden"}}>
-          <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center",flexShrink:0}}>
-            <TypePicker value={newTaskType} onChange={setNewTaskType} types={types}/>
+      {/* Spacer so content isn't hidden behind the fixed footer */}
+      <div style={{height: isOOO ? 0 : 84}}/>
+
+      {/* Add task — fixed footer */}
+      {!isOOO && (
+        <div style={{position:"fixed",bottom:0,left:0,right:0,zIndex:100,background:"var(--color-background-primary)",borderTop:"1.5px solid var(--color-border-tertiary)"}}>
+          <div style={{maxWidth:780,margin:"0 auto",padding:"12px 1.25rem"}}>
+            <div style={{display:"flex",borderRadius:12,border:taskInputFocused?`1.5px solid ${accent}`:"1.5px solid var(--color-border-secondary)",background:"var(--color-background-primary)",transition:"border-color 0.15s",overflow:"hidden"}}>
+              <div style={{borderRight:"1.5px solid var(--color-border-secondary)",display:"flex",alignItems:"center",flexShrink:0}}>
+                <TypePicker value={newTaskType} onChange={setNewTaskType} types={types}/>
+              </div>
+              <input value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask()} onFocus={() => setTaskInputFocused(true)} onBlur={() => setTaskInputFocused(false)} placeholder={`Add ${resolveType(types, newTaskType).label.toLowerCase()} task...`} style={{flex:1,fontSize:14,padding:"10px 14px",border:"none",outline:"none",background:"transparent",color:"var(--color-text-primary)",fontFamily:"var(--font-sans)"}}/>
+              <button onClick={addTask} onMouseDown={e => (e.currentTarget.style.transform = "scale(0.93)")} onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")} style={{padding:"10px 16px",border:"none",background:accent,cursor:"pointer",fontSize:20,color:"#fff",fontWeight:700,flexShrink:0,transition:"box-shadow 0.2s",boxShadow:newTask.trim()?`0 0 0 3px ${accent}55`:"none"}}>+</button>
+            </div>
           </div>
-          <input value={newTask} onChange={e => setNewTask(e.target.value)} onKeyDown={e => e.key === "Enter" && addTask()} onFocus={() => setTaskInputFocused(true)} onBlur={() => setTaskInputFocused(false)} placeholder={`Add ${resolveType(types, newTaskType).label.toLowerCase()} task...`} style={{flex:1,fontSize:14,padding:"10px 14px",border:"none",outline:"none",background:"transparent",color:"var(--color-text-primary)",fontFamily:"var(--font-sans)"}}/>
-          <button onClick={addTask} onMouseDown={e => (e.currentTarget.style.transform = "scale(0.93)")} onMouseUp={e => (e.currentTarget.style.transform = "scale(1)")} style={{padding:"10px 16px",border:"none",background:accent,cursor:"pointer",fontSize:20,color:"#fff",fontWeight:700,flexShrink:0}}>+</button>
         </div>
-        {!isToday && <button onClick={() => setCurrentDate(new Date(today))} style={{marginTop:8,width:"100%",padding:"7px",borderRadius:12,border:"1.5px solid var(--color-border-tertiary)",background:"transparent",cursor:"pointer",fontSize:12,color:"var(--color-text-tertiary)",fontWeight:600,letterSpacing:"0.2px",fontFamily:"var(--font-sans)"}}>↩ back to today</button>}
-      </div>
+      )}
     </div>
   );
 }
