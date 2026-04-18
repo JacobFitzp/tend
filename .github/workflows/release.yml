@@ -63,10 +63,8 @@ jobs:
         shell: bash
       - name: Build Next.js static output
         run: npx next build
-      - name: Add Android platform & sync
-        run: |
-          npx cap add android
-          npx cap sync android
+      - name: Sync Android platform
+        run: npx cap sync android
       - name: Build APK
         working-directory: android
         run: ./gradlew assembleDebug

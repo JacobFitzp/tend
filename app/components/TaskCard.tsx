@@ -51,10 +51,10 @@ export function TaskCard({
       className={`task-card${isImp ? " imp-card" : ""}${isDragOver ? " drag-over" : ""}`}
       draggable onDragStart={onDragStart} onDragOver={onDragOver} onDrop={onDrop} onDragEnd={onDragEnd}
       style={{
-        background: isImp ? "linear-gradient(135deg,#FDF3E0 0%,var(--color-background-primary) 55%)" : "var(--color-background-primary)",
-        border: isImp ? "1.5px solid #F0B85A" : "1.5px solid var(--color-border-secondary)",
+        background: isImp ? "linear-gradient(135deg,var(--color-important-bg-from) 0%,var(--color-background-primary) 55%)" : "var(--color-background-primary)",
+        border: isImp ? "1.5px solid var(--color-important-border)" : "1.5px solid var(--color-border-secondary)",
         borderRadius: 16, overflow: "visible", opacity: task.done ? 0.5 : 1,
-        borderLeft: `4px solid ${task.done ? "#1D9E75" : isImp ? "#EF9F27" : tp.color}`,
+        borderLeft: `4px solid ${task.done ? "#1D9E75" : isImp ? "var(--color-important-accent)" : tp.color}`,
         boxShadow: "0 1px 4px rgba(0,0,0,0.07)",
         cursor: "grab", width: "100%", minWidth: 0, boxSizing: "border-box",
       }}
@@ -65,7 +65,7 @@ export function TaskCard({
           onClick={onToggle}
           className={`check-btn${isFlash ? " pop" : ""}`}
           title={hasLink ? "Ctrl+click to open link" : ""}
-          style={{width:22,height:22,borderRadius:"50%",flexShrink:0,border:task.done?"none":`2px solid ${isImp?"#EF9F27":tp.color}`,background:task.done?"#1D9E75":"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
+          style={{width:22,height:22,borderRadius:"50%",flexShrink:0,border:task.done?"none":`2px solid ${isImp?"var(--color-important-accent)":tp.color}`,background:task.done?"#1D9E75":"transparent",cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center"}}
         >
           {task.done && <span style={{color:"#fff",fontSize:10,fontWeight:700}}>✓</span>}
         </button>
@@ -93,14 +93,14 @@ export function TaskCard({
             style={{width:20,height:20,borderRadius:"50%",background:"#E6F1FB",border:"1.5px solid #B5D4F4",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0,fontSize:9,cursor:"pointer"}}
           >🔗</span>
         )}
-        <button onClick={onToggleImportant} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:isImp?1:0.18,color:"#EF9F27",padding:"0 1px",lineHeight:1,flexShrink:0}}>★</button>
+        <button onClick={onToggleImportant} style={{background:"none",border:"none",cursor:"pointer",fontSize:13,opacity:isImp?1:0.18,color:"var(--color-important-accent)",padding:"0 1px",lineHeight:1,flexShrink:0}}>★</button>
         <button onClick={onToggleExpand} style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)",fontSize:10,padding:"2px 3px",lineHeight:1,flexShrink:0,opacity:0.7}}>{isExpanded ? "▲" : "▼"}</button>
         <button onClick={onDelete} className="delete-btn" style={{background:"none",border:"none",cursor:"pointer",color:"var(--color-text-tertiary)",fontSize:16,padding:"1px 2px",lineHeight:1,flexShrink:0}}>×</button>
       </div>
 
       {subTotal > 0 && !isExpanded && (
         <div style={{height:3,background:"var(--color-border-tertiary)",margin:"0 16px 10px"}}>
-          <div style={{height:"100%",width:`${subPct}%`,background:isImp?"#EF9F27":tp.color,borderRadius:99,transition:"width 0.4s"}}/>
+          <div style={{height:"100%",width:`${subPct}%`,background:isImp?"var(--color-important-accent)":tp.color,borderRadius:99,transition:"width 0.4s"}}/>
         </div>
       )}
 

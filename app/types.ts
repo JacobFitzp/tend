@@ -35,6 +35,8 @@ export interface StreakState {
   lastClearedKey: string | null;
 }
 
+export type Theme = "light" | "dark" | "system";
+
 export interface AppState {
   tasks: TasksMap;
   xp: number;

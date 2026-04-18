@@ -41,9 +41,14 @@ export const store = {
   ooo:        (v: AppState["ooo"])        => lsSet("ooo-v1",        JSON.stringify(v)),
   workdays:   (v: AppState["workdays"])  => lsSet("workdays-v1",   JSON.stringify(v)),
   sound:      (v: boolean)               => lsSet("sound-v1",       String(v)),
+  theme:      (v: string)                => lsSet("theme-v1",        v),
 };
 
 export function loadSoundEnabled(): boolean {
   const v = lsGet("sound-v1");
   return v === null ? true : v === "true";
+}
+
+export function loadTheme(): string {
+  return lsGet("theme-v1") ?? "system";
 }

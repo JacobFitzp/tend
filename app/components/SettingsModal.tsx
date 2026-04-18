@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from 'react';
-import type { TaskType, AppState } from '../types';
+import type { TaskType, AppState, Theme } from '../types';
 import { ICON_OPTIONS, tbg, tborder } from '../lib/constants';
 import { loadState } from '../lib/storage';
 import { ColourPicker } from './ColourPicker';
@@ -15,6 +15,8 @@ interface SettingsModalProps {
   onSoundToggle: (v: boolean) => void;
   workdays: number[];
   onWorkdaysChange: (wd: number[]) => void;
+  theme: Theme;
+  onThemeChange: (t: Theme) => void;
   onClose: () => void;
 }
 
@@ -25,7 +27,7 @@ const sectionLabel: React.CSSProperties = {
   marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.3px",
 };
 
-export function SettingsModal({ accent, onAccentChange, types, onTypesChange, onImport, soundEnabled, onSoundToggle, workdays, onWorkdaysChange, onClose }: SettingsModalProps) {
+export function SettingsModal({ accent, onAccentChange, types, onTypesChange, onImport, soundEnabled, onSoundToggle, workdays, onWorkdaysChange, theme, onThemeChange, onClose }: SettingsModalProps) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handler);
@@ -130,13 +132,35 @@ export function SettingsModal({ accent, onAccentChange, types, onTypesChange, on
 
         {/* Sound effects */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div style={{fontSize:13,fontWeight:500,color:"var(--color-text-primary)"}}>Sound effects</div>
+          <div style={{...sectionLabel,marginBottom:0}}>Sound effects</div>
           <button
             onClick={() => onSoundToggle(!soundEnabled)}
             style={{width:40,height:22,borderRadius:99,border:"none",cursor:"pointer",padding:0,background:soundEnabled ? accent : "var(--color-border-secondary)",position:"relative",transition:"background 0.2s"}}
           >
             <span style={{position:"absolute",top:3,left:soundEnabled ? 21 : 3,width:16,height:16,borderRadius:"50%",background:"white",transition:"left 0.2s",display:"block"}}/>
           </button>
+        </div>
+
+        <div style={divider}/>
+
+        {/* Appearance */}
+        <div>
+          <div style={sectionLabel}>Appearance</div>
+          <div style={{display:"flex",gap:6}}>
+            {(["light", "system", "dark"] as Theme[]).map(t => {
+              const active = theme === t;
+              const label = t === "light" ? "☀️ Light" : t === "dark" ? "🌙 Dark" : "⚙️ System";
+              return (
+                <button
+                  key={t}
+                  onClick={() => onThemeChange(t)}
+                  style={{flex:1,padding:"6px 0",borderRadius:8,border:`1.5px solid ${active ? accent : "var(--color-border-secondary)"}`,background:active ? accent : "transparent",color:active ? "#fff" : "var(--color-text-tertiary)",fontSize:12,fontWeight:active ? 600 : 400,cursor:"pointer",transition:"all 0.15s"}}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         <div style={divider}/>

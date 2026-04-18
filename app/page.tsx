@@ -10,7 +10,8 @@ import {
   getDayFlower, getLevelTitle, resolveType, computeStreak,
 } from './lib/dateUtils';
 import { SFX } from './lib/sfx';
-import { loadState, loadSoundEnabled, store } from './lib/storage';
+import { loadState, loadSoundEnabled, loadTheme, store } from './lib/storage';
+import type { Theme } from './types';
 import { FlowerPlant, FLOWER_NAMES } from './components/flowers/FlowerPlant';
 import { Particle } from './components/particles/Particle';
 import { useParticles } from './components/particles/useParticles';
@@ -48,6 +49,7 @@ export default function App() {
   const [combo, setCombo] = useState(0);
   const [comboToast, setComboToast] = useState<{ mult: number; bonus: number; key: number } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [theme, setTheme] = useState<Theme>("system");
   const [doneCollapsed, setDoneCollapsed] = useState(false);
   const [ooo, setOoo] = useState<Record<string, boolean>>({});
   const [workdays, setWorkdays] = useState<number[]>(DEFAULT_WORKDAYS);
@@ -56,6 +58,7 @@ export default function App() {
   const { particles, burst, remove } = useParticles();
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const prevAllDone = useRef(false);
+  const preCompletionStreak = useRef<StreakState | null>(null);
   const dragId = useRef<number | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -66,6 +69,7 @@ export default function App() {
       setTasks(s.tasks); setXp(s.xp); setAccent(s.accent); setTypes(s.types);
       setStreak(s.streak); setCelebrated(s.celebrated); setOoo(s.ooo ?? {}); setWorkdays(s.workdays ?? DEFAULT_WORKDAYS);
       const snd = loadSoundEnabled(); setSoundEnabled(snd); SFX.setEnabled(snd);
+      setTheme(loadTheme() as Theme);
       let maxId = 0;
       Object.values(s.tasks).forEach(day => (day as Task[]).forEach(task => {
         if (task.id > maxId) maxId = task.id;
@@ -99,6 +103,12 @@ export default function App() {
   const ab = accent + "18", aborder = accent + "44";
 
   useEffect(() => {
+    const cl = document.documentElement.classList;
+    cl.remove("theme-light", "theme-dark");
+    if (theme !== "system") cl.add(`theme-${theme}`);
+  }, [theme]);
+
+  useEffect(() => {
     if (level > prevLevel) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowLevelUp(true); SFX.levelUp();
@@ -118,6 +128,7 @@ export default function App() {
       const newCel = { ...celebrated, [dateKey]: true };
       setCelebrated(newCel); store.celebrated(newCel);
       if (isToday) {
+        preCompletionStreak.current = streak;
         const next = computeStreak(streak, today, ooo, workdays);
         setStreak(next); store.streak(next);
         const MILESTONES = [5, 10, 25, 50, 100];
@@ -157,6 +168,7 @@ export default function App() {
   const changeAccent = (a: string) => { setAccent(a); store.accent(a); };
   const changeTypes = (tt: TaskType[]) => { setTypes(tt); store.types(tt); };
   const changeSound = (v: boolean) => { setSoundEnabled(v); SFX.setEnabled(v); store.sound(v); };
+  const changeTheme = (t: Theme) => { setTheme(t); store.theme(t); };
   const toggleOOO = () => { const next = { ...ooo, [dateKey]: !ooo[dateKey] }; setOoo(next); store.ooo(next); };
   const changeWorkdays = (wd: number[]) => { if (wd.length === 0) return; setWorkdays(wd); store.workdays(wd); };
 
@@ -177,6 +189,13 @@ export default function App() {
   const addTask = () => {
     if (!newTask.trim()) return;
     SFX.addTask();
+    if (isToday && celebrated[dateKey] && preCompletionStreak.current) {
+      const newCel = { ...celebrated };
+      delete newCel[dateKey];
+      setCelebrated(newCel); store.celebrated(newCel);
+      setStreak(preCompletionStreak.current); store.streak(preCompletionStreak.current);
+      preCompletionStreak.current = null;
+    }
     updateTasks(ts => [...ts, { id: nextTid(), title: newTask.trim(), type: newTaskType, done: false, important: false, subtasks: [], link: null }]);
     setNewTask("");
   };
@@ -243,7 +262,7 @@ export default function App() {
       {showLevelUp && <div className="lvl-toast" style={{position:"fixed",top:64,left:"50%",background:accent,color:"#fff",padding:"10px 22px",borderRadius:99,fontSize:13,fontWeight:700,zIndex:10000,pointerEvents:"none",whiteSpace:"nowrap",letterSpacing:"0.3px"}}>Level up! Now level {level} ✦</div>}
       {comboToast && <div key={comboToast.key} className="combo-toast" style={{position:"fixed",top:108,left:"50%",background:"#222",color:"#FFD700",padding:"8px 18px",borderRadius:99,fontSize:14,fontWeight:700,zIndex:10000,pointerEvents:"none",whiteSpace:"nowrap"}}>{comboToast.mult}× COMBO · +{comboToast.bonus} XP</div>}
       {linkModal != null && <LinkModal accent={accent} existing={linkModalTask?.link ?? null} onSave={(url, label) => saveLink(linkModal, url, label)} onRemove={() => removeLink(linkModal)} onClose={() => setLinkModal(null)}/>}
-      {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} workdays={workdays} onWorkdaysChange={changeWorkdays} onClose={() => setShowSettings(false)}/>}
+      {showSettings && <SettingsModal accent={accent} onAccentChange={changeAccent} types={types} onTypesChange={changeTypes} onImport={handleImport} soundEnabled={soundEnabled} onSoundToggle={changeSound} workdays={workdays} onWorkdaysChange={changeWorkdays} theme={theme} onThemeChange={changeTheme} onClose={() => setShowSettings(false)}/>}
 
       {/* Drag handle strip at the very top */}
       <div style={{height:32,width:"100%",WebkitAppRegion:"drag",cursor:"grab",marginBottom:-32,position:"relative",zIndex:1} as React.CSSProperties}/>
